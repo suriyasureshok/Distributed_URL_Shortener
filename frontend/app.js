@@ -57,6 +57,7 @@ let readCount = 0;
 let writeCount = 0;
 let hitCount = 0;
 let missCount = 0;
+let cacheLookupCount = 0;
 let latencyTotalMs = 0;
 let latencySamples = 0;
 
@@ -190,12 +191,12 @@ function updateStats(latencyMs) {
     latencySamples += 1;
   }
 
-  const hitRate = readCount > 0 ? (hitCount / readCount) * 100 : 0;
+  const hitRate = cacheLookupCount > 0 ? (hitCount / cacheLookupCount) * 100 : 0;
   const avgLatency = latencySamples > 0 ? latencyTotalMs / latencySamples : null;
 
   requestCountStat.textContent = String(requestCount);
-  cacheHitStat.textContent = readCount > 0 ? `${hitRate.toFixed(1)} %` : "N/A";
-  hitBar.style.width = readCount > 0 ? `${Math.max(4, Math.min(100, hitRate))}%` : "0%";
+  cacheHitStat.textContent = cacheLookupCount > 0 ? `${hitRate.toFixed(1)} %` : "N/A";
+  hitBar.style.width = cacheLookupCount > 0 ? `${Math.max(4, Math.min(100, hitRate))}%` : "0%";
 
   analyticsRequests.textContent = String(requestCount);
   analyticsReads.textContent = String(readCount);
@@ -233,21 +234,30 @@ function processEventPayload(payload) {
   const source = typeof payload.source === "string" ? payload.source : null;
   const shortCode = typeof payload.short_code === "string" ? payload.short_code : null;
   const latency = Number.isFinite(payload.latency_ms) ? Number(payload.latency_ms) : null;
+  const isRead = type === "READ";
+  const isCacheHit = isRead && cache === "HIT";
+  const isCacheMiss = isRead && cache === "MISS";
+  const isCountableCacheEvent =
+    (isCacheHit || isCacheMiss) &&
+    (status === "OK" || status === "NOT_FOUND");
 
   if (type === "READ" || type === "WRITE") {
     requestCount += 1;
   }
-  if (type === "READ") {
+  if (isRead) {
     readCount += 1;
   }
   if (type === "WRITE") {
     writeCount += 1;
   }
-  if (type === "READ" && cache === "HIT") {
-    hitCount += 1;
-  }
-  if (type === "READ" && cache === "MISS") {
-    missCount += 1;
+  if (isCountableCacheEvent) {
+    cacheLookupCount += 1;
+    if (isCacheHit) {
+      hitCount += 1;
+    }
+    if (isCacheMiss) {
+      missCount += 1;
+    }
   }
 
   if (node) apiNodes.add(node);

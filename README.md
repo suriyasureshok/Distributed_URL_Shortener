@@ -215,6 +215,32 @@ For fully containerized execution, align:
 - HAProxy backend target ports
 - DB/Redis hostnames (use service names, not localhost)
 
+### Start only Redis and DB services
+
+From the project root, run:
+
+```powershell
+docker compose up -d redis0 redis1 redis2 db0 db1 db2
+```
+
+Check status:
+
+```powershell
+docker compose ps redis0 redis1 redis2 db0 db1 db2
+```
+
+Stop only Redis and DB services:
+
+```powershell
+docker compose stop redis0 redis1 redis2 db0 db1 db2
+```
+
+Remove the same stopped containers:
+
+```powershell
+docker compose rm -f redis0 redis1 redis2 db0 db1 db2
+```
+
 ## 9) Validation and Testing Scenarios
 
 ### Functional smoke test
