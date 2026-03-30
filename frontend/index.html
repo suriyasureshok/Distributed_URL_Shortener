@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shorten.io | Distributed URL System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand-wrap">
+      <h1 class="brand">Shorten.io</h1>
+      <nav class="topnav">
+        <a href="#" class="active" data-tab-link="dashboard">Dashboard</a>
+        <a href="#" data-tab-link="analytics">Analytics</a>
+        <a href="#" data-tab-link="nodes">Nodes</a>
+      </nav>
+    </div>
+
+    <div class="topbar-right">
+      <div class="status-pill disconnected" id="connection-status">
+        <span class="dot-wrap">
+          <span class="dot-ping" id="status-ping"></span>
+          <span class="dot" id="status-dot"></span>
+        </span>
+        <span id="status-text">Disconnected</span>
+      </div>
+      <button class="icon-btn" type="button" aria-label="sensors"><span class="material-symbols-outlined">sensors</span></button>
+      <button class="icon-btn" type="button" aria-label="settings"><span class="material-symbols-outlined">settings</span></button>
+    </div>
+  </header>
+
+  <aside class="sidebar">
+    <div class="cluster-card">
+      <div class="cluster-icon"><span class="material-symbols-outlined">hub</span></div>
+      <div>
+        <p class="cluster-title">Global Shortener</p>
+        <p class="cluster-sub">Distributed Mode</p>
+      </div>
+    </div>
+
+    <nav class="sidenav">
+      <a href="#" class="active" data-tab-link="dashboard"><span class="material-symbols-outlined">dashboard</span><span>Dashboard</span></a>
+      <a href="#" data-tab-link="analytics"><span class="material-symbols-outlined">bar_chart</span><span>Analytics</span></a>
+      <a href="#" data-tab-link="nodes"><span class="material-symbols-outlined">dns</span><span>Shards</span></a>
+      <a href="#" data-tab-link="history"><span class="material-symbols-outlined">history</span><span>History</span></a>
+    </nav>
+
+    <button class="new-link-btn" id="new-link-btn" type="button">
+      <span class="material-symbols-outlined">add</span>
+      <span>New Link</span>
+    </button>
+  </aside>
+
+  <main class="main-content">
+    <section class="hero">
+      <h2>Distributed <span>Shortener</span></h2>
+      <p>Route requests across API nodes, Redis, and sharded databases with realtime observability.</p>
+    </section>
+
+    <section class="layout-grid tab-view" data-tab="dashboard">
+      <div class="left-col">
+        <article class="panel forge-panel">
+          <div class="glow"></div>
+          <h3><span class="material-symbols-outlined">link</span> Forge New Link</h3>
+
+          <form id="shorten-form" class="url-form" novalidate>
+            <label for="long-url">Destination URL</label>
+            <div class="form-row">
+              <input id="long-url" type="url" placeholder="https://very-long-url.com/path" required />
+              <button id="shorten-btn" type="submit">
+                <span id="btn-text">Shorten URL</span>
+                <span id="btn-spinner" class="spinner hidden"></span>
+              </button>
+            </div>
+            <p id="form-error" class="form-error hidden"></p>
+          </form>
+
+          <div id="result-area" class="result-area hidden">
+            <div class="result-icon"><span class="material-symbols-outlined">auto_awesome</span></div>
+            <div class="result-content">
+              <p class="result-label">Generated Short Link</p>
+              <a id="short-url" href="#" target="_blank" rel="noopener noreferrer"></a>
+            </div>
+            <button id="copy-btn" type="button">
+              <span class="material-symbols-outlined">content_copy</span>
+              <span>Copy</span>
+            </button>
+          </div>
+        </article>
+
+        <section class="stats-grid">
+          <article class="panel stat-card">
+            <p>Avg Latency</p>
+            <h4 id="latency-stat">-- ms</h4>
+            <div class="bar"><span id="latency-bar"></span></div>
+          </article>
+          <article class="panel stat-card">
+            <p>Cache Hit Rate</p>
+            <h4 id="cache-hit-stat">-- %</h4>
+            <div class="bar"><span id="hit-bar"></span></div>
+          </article>
+          <article class="panel stat-card">
+            <p>Total Requests</p>
+            <h4 id="request-count-stat">0</h4>
+            <small id="req-trend">Realtime tracking</small>
+          </article>
+        </section>
+      </div>
+
+      <div class="right-col">
+        <article class="panel log-panel">
+          <div class="log-head">
+            <div class="live-mark"><span></span><h3>Live System Logs</h3></div>
+            <button id="clear-logs" type="button">Clear</button>
+          </div>
+
+          <div id="log-container" class="log-container">
+            <div class="log-row muted">
+              <span class="time">--:--:--</span>
+              <p><span class="tag">[SYSTEM]</span> Waiting for websocket events...</p>
+            </div>
+          </div>
+
+          <div class="log-foot">
+            <p>Stream</p>
+            <span id="stream-status">Disconnected</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section class="tab-view hidden" data-tab="analytics">
+      <div class="analytics-grid">
+        <article class="panel analytics-card">
+          <h3>Request Volume</h3>
+          <p class="metric" id="analytics-requests">0</p>
+          <small>Total read + write events from backend stream</small>
+        </article>
+        <article class="panel analytics-card">
+          <h3>Read / Write</h3>
+          <p class="metric"><span id="analytics-reads">0</span> / <span id="analytics-writes">0</span></p>
+          <small>Successful and failed operations included</small>
+        </article>
+        <article class="panel analytics-card">
+          <h3>Cache Hits / Misses</h3>
+          <p class="metric"><span id="analytics-hits">0</span> / <span id="analytics-misses">0</span></p>
+          <small>Derived only from read events</small>
+        </article>
+        <article class="panel analytics-card">
+          <h3>Average Latency</h3>
+          <p class="metric" id="analytics-latency">N/A</p>
+          <small>Computed from backend latency_ms values</small>
+        </article>
+      </div>
+    </section>
+
+    <section class="tab-view hidden" data-tab="nodes">
+      <div class="nodes-grid">
+        <article class="panel node-card">
+          <h3>API Nodes Seen</h3>
+          <ul id="api-nodes-list" class="node-list"><li>No data yet</li></ul>
+        </article>
+        <article class="panel node-card">
+          <h3>Redis Nodes Seen</h3>
+          <ul id="redis-nodes-list" class="node-list"><li>No data yet</li></ul>
+        </article>
+        <article class="panel node-card">
+          <h3>DB Shards Seen</h3>
+          <ul id="db-shards-list" class="node-list"><li>No data yet</li></ul>
+        </article>
+      </div>
+    </section>
+
+    <section class="tab-view hidden" data-tab="history">
+      <article class="panel history-panel">
+        <div class="history-head">
+          <h3>Event History</h3>
+          <button id="clear-history" type="button">Clear</button>
+        </div>
+        <div id="history-container" class="history-container">
+          <div class="history-row muted">No events yet.</div>
+        </div>
+      </article>
+    </section>
+  </main>
+
+  <div id="toast" class="toast hidden" role="status" aria-live="polite">
+    <div id="toast-icon" class="toast-icon"><span class="material-symbols-outlined">check_circle</span></div>
+    <div>
+      <p id="toast-title">Success</p>
+      <p id="toast-message">Action completed.</p>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
