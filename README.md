@@ -1,4 +1,4 @@
-# Distributed URL Shortener (Rust + Actix)
+# Shorten.io: Distributed URL Shortener (Rust + Actix)
 
 This project is a distributed URL shortener with:
 
@@ -13,7 +13,7 @@ This project is a distributed URL shortener with:
 
 The result is a practical distributed systems demo that shows how traffic is routed, where data is stored, and how failures are handled.
 
-## 1) What Is Implemented
+## What Is Implemented
 
 ### Core backend capabilities
 
@@ -53,9 +53,11 @@ The result is a practical distributed systems demo that shows how traffic is rou
 - Structured broadcast events over WebSocket for every read/write outcome.
 - Frontend consumes only real backend event fields for metrics.
 
-## 2) System Design
+## System Design
 
-### Components
+## Components
+
+![Architecture Diagram](diagrams/URL_Shortener_v2.png)
 
 - API service: Rust + Actix Web
 - Cache: 3 Redis nodes (sharded)
@@ -77,7 +79,7 @@ Pseudo flow:
 2. Redis index = shard index
 3. DB shard index = shard index
 
-## 3) Backend Event Schema (WebSocket)
+## Backend Event Schema (WebSocket)
 
 The backend sends JSON events such as:
 
@@ -97,7 +99,7 @@ Typical fields:
 - `source`: read source (read events)
 - `latency_ms`: measured per-request backend latency
 
-## 4) Frontend Dashboard
+## Frontend Dashboard
 
 The frontend provides:
 
@@ -120,7 +122,7 @@ localStorage.setItem("SHORTENER_BACKEND_BASE", "http://localhost:8080");
 location.reload();
 ```
 
-## 5) Configuration
+## Configuration
 
 Environment variables used by backend:
 
@@ -140,7 +142,7 @@ Important alignment rule:
 - Number of Redis nodes = `REDIS_NODES count`
 - These must be equal for routing alignment.
 
-## 6) API Reference
+## API Reference
 
 ### Create short URL
 
@@ -170,7 +172,7 @@ Important alignment rule:
 - Method: `GET /ws`
 - WebSocket endpoint for event telemetry
 
-## 7) Local Run Guide (Recommended)
+## Local Run Guide (Recommended)
 
 ### Prerequisites
 
@@ -181,7 +183,6 @@ Important alignment rule:
 ### Start backend
 
 ```bash
-cd api_service
 cargo run
 ```
 
@@ -200,7 +201,7 @@ python -m http.server 5500
 
 Open `http://localhost:5500`.
 
-## 8) Docker Compose Notes
+## Docker Compose Notes
 
 The repository includes `docker-compose.yml` and `haproxy.cfg`, but keep these practical points in mind:
 
@@ -219,29 +220,29 @@ For fully containerized execution, align:
 
 From the project root, run:
 
-```powershell
-docker compose up -d redis0 redis1 redis2 db0 db1 db2
+```bash
+docker-compose up -d redis0 redis1 redis2 db0 db1 db2
 ```
 
 Check status:
 
-```powershell
-docker compose ps redis0 redis1 redis2 db0 db1 db2
+```bash
+docker-compose ps redis0 redis1 redis2 db0 db1 db2
 ```
 
 Stop only Redis and DB services:
 
-```powershell
-docker compose stop redis0 redis1 redis2 db0 db1 db2
+```bash
+docker-compose stop redis0 redis1 redis2 db0 db1 db2
 ```
 
 Remove the same stopped containers:
 
-```powershell
-docker compose rm -f redis0 redis1 redis2 db0 db1 db2
+```bash
+docker-compose rm -f redis0 redis1 redis2 db0 db1 db2
 ```
 
-## 9) Validation and Testing Scenarios
+## Validation and Testing Scenarios
 
 ### Functional smoke test
 
@@ -275,14 +276,14 @@ Request the same short link multiple times:
 - first read: likely DB source + cache refill
 - later reads: Redis HIT with lower latency
 
-## 10) Current Limitations
+## Current Limitations
 
 - WebSocket fanout is process-local (no cross-instance pub/sub bus).
 - DB primary/replica is modeled by URL pairing, but real replication orchestration is external.
 - No automatic ring rebalancing/migration workflow when adding or removing nodes.
 - Rate limiter is basic key-window logic and currently keyed by long URL.
 
-## 11) Future Enhancements
+## Future Enhancements
 
 - Cross-instance event bus (Redis pub/sub or NATS) for unified observability
 - Circuit breaker and health-aware shard routing
@@ -292,7 +293,7 @@ Request the same short link multiple times:
 - OpenTelemetry metrics + tracing
 - Authenticated custom aliases and abuse protection
 
-## 12) Tech Stack
+## Tech Stack
 
 - Rust
 - Actix Web + Actix Actors + Actix WebSocket
