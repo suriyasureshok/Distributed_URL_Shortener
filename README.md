@@ -15,7 +15,7 @@
 
 ## Architecture Diagram
 
-![Architecture Diagram](diagrams\URL_Shortener_v2.png)
+![Architecture Diagram](diagrams/URL_Shortener_v2.png)
 
 ## Project Structure
 
