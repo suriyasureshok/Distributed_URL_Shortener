@@ -55,15 +55,15 @@ let latestShortUrl = "";
 let requestCount = 0;
 let readCount = 0;
 let writeCount = 0;
-let hitCount = 0;
-let missCount = 0;
-let cacheLookupCount = 0;
 let latencyTotalMs = 0;
 let latencySamples = 0;
+const cacheMetricsStore =
+  typeof BackendCacheMetricsStore === "function" ? new BackendCacheMetricsStore() : null;
 
 const apiNodes = new Set();
 const redisNodes = new Set();
 const dbShards = new Set();
+const seenEventIds = new Set();
 
 function escapeHtml(value) {
   return String(value)
@@ -191,18 +191,21 @@ function updateStats(latencyMs) {
     latencySamples += 1;
   }
 
-  const hitRate = cacheLookupCount > 0 ? (hitCount / cacheLookupCount) * 100 : 0;
+  const backendCacheSnapshot = cacheMetricsStore ? cacheMetricsStore.getSnapshot() : null;
+  const hasCacheMetrics = Boolean(backendCacheSnapshot && backendCacheSnapshot.hasData);
   const avgLatency = latencySamples > 0 ? latencyTotalMs / latencySamples : null;
 
   requestCountStat.textContent = String(requestCount);
-  cacheHitStat.textContent = cacheLookupCount > 0 ? `${hitRate.toFixed(1)} %` : "N/A";
-  hitBar.style.width = cacheLookupCount > 0 ? `${Math.max(4, Math.min(100, hitRate))}%` : "0%";
+  cacheHitStat.textContent = hasCacheMetrics
+    ? `${backendCacheSnapshot.hitRate.toFixed(1)}% HIT / ${backendCacheSnapshot.missRate.toFixed(1)}% MISS`
+    : "N/A";
+  hitBar.style.width = hasCacheMetrics ? `${backendCacheSnapshot.hitRate}%` : "0%";
 
   analyticsRequests.textContent = String(requestCount);
   analyticsReads.textContent = String(readCount);
   analyticsWrites.textContent = String(writeCount);
-  analyticsHits.textContent = String(hitCount);
-  analyticsMisses.textContent = String(missCount);
+  analyticsHits.textContent = hasCacheMetrics ? String(backendCacheSnapshot.hitCount) : "N/A";
+  analyticsMisses.textContent = hasCacheMetrics ? String(backendCacheSnapshot.missCount) : "N/A";
 
   if (avgLatency !== null) {
     latencyStat.textContent = `${avgLatency.toFixed(1)} ms`;
@@ -233,34 +236,39 @@ function processEventPayload(payload) {
   const cache = typeof payload.cache === "string" ? payload.cache.toUpperCase() : null;
   const source = typeof payload.source === "string" ? payload.source : null;
   const shortCode = typeof payload.short_code === "string" ? payload.short_code : null;
+  const rawEventId = payload.event_id;
+  const eventId = rawEventId === undefined || rawEventId === null ? null : String(rawEventId);
   const latency = Number.isFinite(payload.latency_ms) ? Number(payload.latency_ms) : null;
   const isRead = type === "READ";
-  const isCacheHit = isRead && cache === "HIT";
-  const isCacheMiss = isRead && cache === "MISS";
-  const isCountableCacheEvent =
-    (isCacheHit || isCacheMiss) &&
-    (status === "OK" || status === "NOT_FOUND");
+  const isWrite = type === "WRITE";
+  const isKnownStatus = status === "OK" || status === "NOT_FOUND" || status === "ERROR";
+  const isCountableRead = isRead && isKnownStatus;
+  const isCountableWrite = isWrite && (status === "OK" || status === "ERROR");
 
-  if (type === "READ" || type === "WRITE") {
+  let isDuplicateEvent = false;
+  if (eventId) {
+    if (seenEventIds.has(eventId)) {
+      isDuplicateEvent = true;
+    } else {
+      seenEventIds.add(eventId);
+    }
+  }
+
+  if (!isDuplicateEvent && (isCountableRead || isCountableWrite)) {
     requestCount += 1;
   }
-  if (isRead) {
+  if (!isDuplicateEvent && isCountableRead) {
     readCount += 1;
   }
-  if (type === "WRITE") {
+  if (!isDuplicateEvent && isCountableWrite) {
     writeCount += 1;
   }
-  if (isCountableCacheEvent) {
-    cacheLookupCount += 1;
-    if (isCacheHit) {
-      hitCount += 1;
-    }
-    if (isCacheMiss) {
-      missCount += 1;
-    }
+
+  if (cacheMetricsStore) {
+    cacheMetricsStore.mergeFromPayload(payload);
   }
 
-  if (node) apiNodes.add(node);
+  if (node && node.toLowerCase() !== "unknown") apiNodes.add(node);
   if (redis) redisNodes.add(redis);
   if (db) dbShards.add(db);
 
