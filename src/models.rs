@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool as PgPool;
+use sqlx::PgPool;
 
 #[derive(Deserialize)]
 pub struct CreateRequest {

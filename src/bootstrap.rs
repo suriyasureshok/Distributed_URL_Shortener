@@ -1,7 +1,7 @@
 use crate::domain::ConsistentHash;
 use crate::models::DbShard;
 use redis::Client as RedisClient;
-use sqlx::PgPool as PgPool;
+use sqlx::PgPool;
 use std::env;
 
 pub fn load_db_node_urls() -> Vec<String> {

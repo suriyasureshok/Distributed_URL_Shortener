@@ -2,7 +2,7 @@ use crate::domain::{ConsistentHash, fallback_indices};
 use crate::reliability::{IO_TIMEOUT_MS, RETRY_ATTEMPTS, backoff_delay};
 use redis::AsyncCommands;
 use redis::Client as RedisClient;
-use sqlx::PgPool as PgPool;
+use sqlx::PgPool;
 use std::time::Duration;
 use tokio::time::{sleep, timeout};
 
@@ -126,7 +126,12 @@ pub async fn redis_set_with_fallback(
     false
 }
 
-pub async fn db_insert_with_retry(pool: &PgPool, id: i64, short_code: &str, long_url: &str) -> bool {
+pub async fn db_insert_with_retry(
+    pool: &PgPool,
+    id: i64,
+    short_code: &str,
+    long_url: &str,
+) -> bool {
     for attempt in 0..RETRY_ATTEMPTS {
         let result = timeout(
             Duration::from_millis(IO_TIMEOUT_MS),

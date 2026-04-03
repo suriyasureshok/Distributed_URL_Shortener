@@ -13,7 +13,11 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(db_nodes: Vec<DbShard>, redis_nodes: Vec<RedisClient>, ring: ConsistentHash) -> Self {
+    pub fn new(
+        db_nodes: Vec<DbShard>,
+        redis_nodes: Vec<RedisClient>,
+        ring: ConsistentHash,
+    ) -> Self {
         Self {
             db_nodes,
             redis_nodes,
